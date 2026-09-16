@@ -242,7 +242,8 @@ This project uses MongoDB through Docker Compose.
 Start MongoDB:
 
 ```bash
-docker compose up -d
+docker compose up -d - First time if cteare image
+docker compose start - if image container is already there and only stops
 ```
 
 Check running containers:

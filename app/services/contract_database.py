@@ -1,7 +1,14 @@
 from datetime import datetime, timezone
 from bson import ObjectId
+import logging
 from fastapi import HTTPException
 from app.database.mongodb import contracts_collection
+from app.exceptions.application import (
+  ContractNotFoundException,
+  InvalidContractIDException
+)
+
+logger = logging.getLogger(__name__)
 
 def create_contract_document(
   filename: str,
@@ -33,20 +40,14 @@ def get_contract_by_id(contract_id: str):
   """
 
   if not ObjectId.is_valid(contract_id):
-    raise HTTPException(
-      status_code=400,
-      detail="Invalid contract ID",
-    )
+    raise InvalidContractIDException()
 
   contract = contracts_collection.find_one(
     {"_id": ObjectId(contract_id)}
   )
 
   if not contract:
-    raise HTTPException(
-      status_code=404,
-      detail="Contract not found",
-    )
+    raise ContractNotFoundException()
 
   return contract
 
@@ -58,12 +59,13 @@ def save_contract_analysis(
   """
   Save AI analysis into the existing contract document.
   """
+  logger.info(
+    "Saving contract analysis: contract_id=%s",
+    contract_id,
+  )
 
   if not ObjectId.is_valid(contract_id):
-    raise HTTPException(
-      status_code=400,
-      detail="Invalid contract ID",
-    )
+    raise InvalidContractIDException()
 
   result = contracts_collection.update_one(
     {"_id": ObjectId(contract_id)},
@@ -76,10 +78,7 @@ def save_contract_analysis(
   )
 
   if result.matched_count == 0:
-    raise HTTPException(
-      status_code=404,
-      detail="Contract not found",
-    )
+    raise ContractNotFoundException()
 
   return True
 
@@ -113,20 +112,14 @@ def get_contract_details(contract_id: str):
   """
 
   if not ObjectId.is_valid(contract_id):
-    raise HTTPException(
-      status_code=400,
-      detail="Invalid contract ID",
-    )
+    raise InvalidContractIDException()
 
   contract = contracts_collection.find_one(
     {"_id": ObjectId(contract_id)}
   )
 
   if not contract:
-    raise HTTPException(
-      status_code=404,
-      detail="Contract not found",
-    )
+    raise ContractNotFoundException()
 
   return {
     "contract_id": str(contract["_id"]),
@@ -146,10 +139,7 @@ def get_contract_analysis(contract_id: str):
   """
 
   if not ObjectId.is_valid(contract_id):
-    raise HTTPException(
-      status_code=400,
-      detail="Invalid contract ID",
-    )
+    raise InvalidContractIDException()
 
   contract = contracts_collection.find_one(
     {"_id": ObjectId(contract_id)},
@@ -161,10 +151,7 @@ def get_contract_analysis(contract_id: str):
   )
 
   if not contract:
-    raise HTTPException(
-      status_code=404,
-      detail="Contract not found",
-    )
+    raise ContractNotFoundException()
 
   return {
     "contract_id": str(contract["_id"]),
@@ -179,19 +166,48 @@ def delete_contract(contract_id: str):
   """
 
   if not ObjectId.is_valid(contract_id):
-    raise HTTPException(
-      status_code=400,
-      detail="Invalid contract ID",
-    )
+    raise InvalidContractIDException()
 
   result = contracts_collection.delete_one(
     {"_id": ObjectId(contract_id)}
   )
 
   if result.deleted_count == 0:
-    raise HTTPException(
-      status_code=404,
-      detail="Contract not found",
-    )
+    raise ContractNotFoundException()
 
   return True
+
+def update_contract_metadata(
+  contract_id: str,
+  update_data: dict,
+):
+  """
+  Update editable contract metadata.
+  """
+
+  if not ObjectId.is_valid(contract_id):
+    raise InvalidContractIDException()
+
+  update_fields = {
+    key: value
+    for key, value in update_data.items()
+    if value is not None
+  }
+
+  if not update_fields:
+    raise HTTPException(
+      status_code=400,
+      detail="At least one field is required for update",
+    )
+
+  result = contracts_collection.update_one(
+    {"_id": ObjectId(contract_id)},
+    {
+      "$set": update_fields,
+    },
+  )
+
+  if result.matched_count == 0:
+    raise ContractNotFoundException()
+
+  return get_contract_details(contract_id)

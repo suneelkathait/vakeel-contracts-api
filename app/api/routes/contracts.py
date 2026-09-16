@@ -1,7 +1,9 @@
 from fastapi import APIRouter, UploadFile, File
-
+from app.exceptions.application import ContractNotFoundException
 from app.services.contract_service import save_uploaded_file
 from app.services.document_parser import extract_text
+from app.core.response import success_response
+from app.schemas.contract import ContractUpdateRequest
 from app.services.contract_database import (
   create_contract_document,
   get_contract_by_id,
@@ -10,6 +12,7 @@ from app.services.contract_database import (
   get_contract_details,
   get_contract_analysis,
   delete_contract,
+  update_contract_metadata,
 )
 from app.services.gemini_service import (
   generate_ai_response,
@@ -37,16 +40,16 @@ def upload_contract(file: UploadFile = File(...)): # The ... means required.
     extracted_text=extracted_text,
   )
 
-  return {
-    "message": "Contract uploaded successfully",
-    "data": {
+  return success_response(
+    message="Contract uploaded successfully",
+    data={
       "contract_id": contract["contract_id"],
       "filename": contract["filename"],
       "file_type": contract["file_type"],
       "file_size": contract["file_size"],
       "extracted_text": contract["extracted_text"],
     },
-  }
+  )
 
 @router.get("/test-ai")
 def test_ai():
@@ -104,48 +107,67 @@ def analyze_existing_contract(contract_id: str):
   )
 
   # 6. Return response
-  return {
-    "message": "Contract analyzed successfully",
-    "data": {
+  return success_response(
+    message="Contract analyzed successfully",
+    data={
       "contract_id": contract_id,
       "filename": contract["filename"],
       "analysis": analysis_data,
     },
-  }
+  )
 
 @router.get("/")
 def list_contracts():
   contracts = get_all_contracts()
 
-  return {
-    "message": "Contracts fetched successfully",
-    "count": len(contracts),
-    "data": contracts,
-  }
+  return success_response(
+    message="Contracts fetched successfully",
+    data={
+      "count": len(contracts),
+      "items": contracts,
+    },
+  )
 
 @router.get("/{contract_id}")
 def get_single_contract(contract_id: str):
   contract = get_contract_details(contract_id)
 
-  return {
-    "message": "Contract fetched successfully",
-    "data": contract,
-  }
+  return success_response(
+    message = "Contract fetched successfully",
+    data = contract,
+  )
 
 @router.get("/{contract_id}/analysis")
 def get_analysis(contract_id: str):
   analysis = get_contract_analysis(contract_id)
 
-  return {
-    "message": "Contract analysis fetched successfully",
-    "data": analysis,
-  }
+  return success_response(
+    message="Contract analysis fetched successfully",
+    data=analysis,
+  )
+
+@router.patch("/{contract_id}")
+def update_contract(
+  contract_id: str,
+  payload: ContractUpdateRequest,
+):
+  updated_contract = update_contract_metadata(
+    contract_id=contract_id,
+    update_data=payload.model_dump(),
+  )
+
+  return success_response(
+    message="Contract updated successfully",
+    data=updated_contract,
+  )
 
 @router.delete("/{contract_id}")
 def remove_contract(contract_id: str):
   delete_contract(contract_id)
 
-  return {
-    "message": "Contract deleted successfully",
-    "contract_id": contract_id,
-  }
+  return success_response(
+    message="Contract deleted successfully",
+    data={
+      "contract_id": contract_id,
+    },
+  )

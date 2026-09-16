@@ -1,6 +1,7 @@
 from pathlib import Path
 from PyPDF2 import PdfReader
 from fastapi import HTTPException
+from app.exceptions.application import TextExtractionException
 
 def extract_text_from_pdf(file_path: str) -> str:
   try:
@@ -28,10 +29,7 @@ def extract_text_from_pdf(file_path: str) -> str:
       raise
 
   except Exception as error:
-    raise HTTPException(
-      status_code=400,
-      detail=f"Failed to read PDF: {str(error)}"
-    )
+    raise TextExtractionException()
 
 
 def extract_text_from_txt(file_path: str) -> str:
@@ -52,10 +50,7 @@ def extract_text_from_txt(file_path: str) -> str:
     raise
 
   except Exception as error:
-    raise HTTPException(
-      status_code=400,
-      detail=f"Failed to read TXT file: {str(error)}"
-    )
+    raise TextExtractionException()
 
 
 def extract_text(file_path: str) -> str:
