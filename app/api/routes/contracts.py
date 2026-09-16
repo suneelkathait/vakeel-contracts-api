@@ -1,5 +1,4 @@
 from fastapi import APIRouter, UploadFile, File
-from app.exceptions.application import ContractNotFoundException
 from app.services.contract_service import save_uploaded_file
 from app.services.document_parser import extract_text
 from app.core.response import success_response
@@ -25,7 +24,7 @@ router = APIRouter(
 )
 
 @router.post("/upload")
-def upload_contract(file: UploadFile = File(...)): # The ... means required.
+def upload_contract(file: UploadFile = File(...)): # ... means uploaded file field is required.
   saved_file = save_uploaded_file(file)
 
   extracted_text = extract_text(
@@ -60,10 +59,10 @@ def test_ai():
 
   response = generate_ai_response(prompt)
 
-  return {
-    "message": "Gemini connected successfully",
-    "response": response,
-  }
+  return success_response(
+    message="Gemini connected successfully",
+    data=response,
+  )
 
 @router.get("/test-analysis")
 def test_analysis():
@@ -77,10 +76,12 @@ def test_analysis():
 
   analysis = analyze_contract(sample_contract)
 
-  return {
-    "message": "Contract analysis generated successfully",
-    "analysis": analysis.model_dump(),
-  }
+  return success_response(
+    message="Contract analysis generated successfully",
+    data={
+      "analysis": analysis.model_dump()
+    },
+  )
 
 @router.post("/{contract_id}/analyze")
 def analyze_existing_contract(contract_id: str):
@@ -137,15 +138,6 @@ def get_single_contract(contract_id: str):
     data = contract,
   )
 
-@router.get("/{contract_id}/analysis")
-def get_analysis(contract_id: str):
-  analysis = get_contract_analysis(contract_id)
-
-  return success_response(
-    message="Contract analysis fetched successfully",
-    data=analysis,
-  )
-
 @router.patch("/{contract_id}")
 def update_contract(
   contract_id: str,
@@ -170,4 +162,13 @@ def remove_contract(contract_id: str):
     data={
       "contract_id": contract_id,
     },
+  )
+
+@router.get("/{contract_id}/analysis")
+def get_analysis(contract_id: str):
+  analysis = get_contract_analysis(contract_id)
+
+  return success_response(
+    message="Contract analysis fetched successfully",
+    data=analysis,
   )

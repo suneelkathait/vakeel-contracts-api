@@ -13,12 +13,16 @@ class AppException(Exception):
 
     super().__init__(message)
 
-class ContractNotFoundException(AppException):
-  def __init__(self):
-    super().__init__(
-      message="Contract not found",
-      status_code=404,
-    )
+
+
+
+
+# class ContractNotFoundException(AppException):
+#   def __init__(self):
+#     super().__init__(
+#       message="Contract not found",
+#       status_code=404,
+#     )
 
 class InvalidFileTypeException(AppException):
   def __init__(self):
@@ -48,9 +52,16 @@ class AIAnalysisException(AppException):
       status_code=500,
     )
 
-class InvalidContractIDException(AppException):
-  def __init__(self):
-    super().__init__(
-      message="Invalid contract ID provided",
-      status_code=400,
-    )
+# class InvalidContractIDException(AppException):
+#   def __init__(self):
+#     super().__init__(
+#       message="Invalid contract ID provided",
+#       status_code=400,
+#     )
+
+# class UpdateContractException(AppException):
+#   def __init__(self):
+#     super().__init__(
+#       message="At least one field is required for update",
+#       status_code=400,
+#     )
