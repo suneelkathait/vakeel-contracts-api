@@ -523,40 +523,7 @@ The `uploads/` directory should exist locally but should generally not be commit
 
 ---
 
-## 13. Git Ignore Configuration
-
-Create a `.gitignore` file with:
-
-```gitignore
-# Virtual environment
-venv/
-.venv/
-
-# Environment variables
-.env
-
-# Python cache
-__pycache__/
-*.py[cod]
-
-# Uploaded files
-uploads/
-
-# IDE files
-.vscode/
-.idea/
-
-# Operating system files
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-```
-
----
-
-## 14. Troubleshooting
+## 13. Troubleshooting
 
 ### MongoDB Connection Error
 
@@ -650,7 +617,7 @@ docker compose down
 
 ---
 
-## 16. Future Improvements
+## 15. Future Improvements
 
 Planned improvements may include:
 
