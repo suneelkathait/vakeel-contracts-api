@@ -1,4 +1,5 @@
 from fastapi import APIRouter, UploadFile, File
+import asyncio
 from app.services.contract_service import save_uploaded_file
 from app.services.document_parser import extract_text
 from app.core.response import success_response
@@ -84,14 +85,14 @@ def test_analysis():
   )
 
 @router.post("/{contract_id}/analyze")
-def analyze_existing_contract(contract_id: str):
+async def analyze_existing_contract(contract_id: str):
   """
   Analyze an already uploaded contract.
   """
 
   # 1. Fetch contract from MongoDB
   contract = get_contract_by_id(contract_id)
-
+  
   # 2. Extract previously saved text
   contract_text = contract["extracted_text"]
 

@@ -1,10 +1,7 @@
 from pathlib import Path
 import logging
-from fastapi import UploadFile, HTTPException
-from app.exceptions.application import (
-  InvalidFileTypeException,
-  EmptyFileException,
-)
+from fastapi import UploadFile
+from app.exceptions.application import AppException
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +10,10 @@ ALLOWED_EXTENSIONS = {".pdf", ".txt"}
 
 def save_uploaded_file(file: UploadFile) -> dict:
   if not file.filename:
-    raise HTTPException(
-      status_code=400,
-      detail="Filename is required",
+    raise AppException(
+      error_code="VALIDATION_ERROR",
+      message="Filename is required",
+      status_code=422,
     )
 
   logger.info(
@@ -32,7 +30,11 @@ def save_uploaded_file(file: UploadFile) -> dict:
       file_extension,
     )
 
-    raise InvalidFileTypeException()
+    raise AppException(
+      error_code="INVALID_FILE_TYPE",
+      message="Only PDF and TXT files are allowed",
+      status_code=400,
+    )
 
   UPLOAD_DIR.mkdir(
     parents=True,
@@ -49,7 +51,11 @@ def save_uploaded_file(file: UploadFile) -> dict:
       file.filename,
     )
 
-    raise EmptyFileException()
+    raise AppException(
+      error_code="EMPTY_FILE",
+      message="Uploaded file is empty",
+      status_code=400,
+    )
 
   file_path.write_bytes(file_content)
 

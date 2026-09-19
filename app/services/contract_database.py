@@ -3,6 +3,7 @@ from bson import ObjectId
 import logging
 from app.database.mongodb import contracts_collection
 from app.exceptions.application import AppException
+from app.database.health import ensure_database_connection
 
 logger = logging.getLogger(__name__)
 
@@ -22,21 +23,36 @@ def create_contract_document(
     "analysis": None,
     "created_at": datetime.now(timezone.utc),
   }
+  ensure_database_connection()
+  try:
+    result = contracts_collection.insert_one(contract_document)
 
-  result = contracts_collection.insert_one(contract_document)
-
-  return {
-    "contract_id": str(result.inserted_id),
-    **contract_document,
-  }
+    return {
+      "contract_id": str(result.inserted_id),
+      **contract_document,
+    }
+  except ValueError as error:
+    raise AppException(
+      error_code="VALIDATION_ERROR",
+      message=str(error),
+      status_code=400,
+    )
+  except Exception as error:
+    raise AppException(
+      error_code="CONTRACT_ANALYSIS_ERROR",
+      message="Contract analysis failed",
+      status_code=500,
+    )
 
 def get_contract_by_id(contract_id: str):
   """
   Fetch a contract document from MongoDB using its ID.
   """
+  ensure_database_connection()
 
   if not ObjectId.is_valid(contract_id):
     raise AppException(
+      error_code="INVALID_CONTRACT_ID",
       message="Invalid contract ID provided",
       status_code=400,
     )
@@ -47,12 +63,12 @@ def get_contract_by_id(contract_id: str):
 
   if not contract:
     raise AppException(
+      error_code="CONTRACT_NOT_FOUND",
       message="Contract not found",
       status_code=400,
     )
 
   return contract
-
 
 def save_contract_analysis(
   contract_id: str,
@@ -68,6 +84,7 @@ def save_contract_analysis(
 
   if not ObjectId.is_valid(contract_id):
     raise AppException(
+      error_code="INVALID_CONTRACT_ID",
       message="Invalid contract ID provided",
       status_code=400,
     )
@@ -84,6 +101,7 @@ def save_contract_analysis(
 
   if result.matched_count == 0:
     raise AppException(
+      error_code="CONTRACT_NOT_FOUND",
       message="Contract not found",
       status_code=400,
     )
@@ -94,6 +112,8 @@ def get_all_contracts():
   """
   Fetch all contracts from MongoDB.
   """
+
+  ensure_database_connection()
 
   contracts = contracts_collection.find().sort(
     "created_at",
@@ -118,9 +138,11 @@ def get_contract_details(contract_id: str):
   """
   Fetch complete contract details by ID.
   """
+  ensure_database_connection()
 
   if not ObjectId.is_valid(contract_id):
     raise AppException(
+      error_code="INVALID_CONTRACT_ID",
       message="Invalid contract ID provided",
       status_code=400,
     )
@@ -131,6 +153,7 @@ def get_contract_details(contract_id: str):
 
   if not contract:
     raise AppException(
+      error_code="CONTRACT_NOT_FOUND",
       message="Contract not found",
       status_code=400,
     )
@@ -151,9 +174,11 @@ def get_contract_analysis(contract_id: str):
   """
   Fetch only the AI analysis of a contract.
   """
+  ensure_database_connection()
 
   if not ObjectId.is_valid(contract_id):
     raise AppException(
+      error_code="INVALID_CONTRACT_ID",
       message="Invalid contract ID provided",
       status_code=400,
     )
@@ -169,6 +194,7 @@ def get_contract_analysis(contract_id: str):
 
   if not contract:
     raise AppException(
+      error_code="CONTRACT_NOT_FOUND",
       message="Contract not found",
       status_code=400,
     )
@@ -184,9 +210,11 @@ def delete_contract(contract_id: str):
   """
   Delete a contract from MongoDB.
   """
+  ensure_database_connection()
 
   if not ObjectId.is_valid(contract_id):
     raise AppException(
+      error_code="INVALID_CONTRACT_ID",
       message="Invalid contract ID provided",
       status_code=400,
     )
@@ -197,6 +225,7 @@ def delete_contract(contract_id: str):
 
   if result.deleted_count == 0:
     raise AppException(
+      error_code="CONTRACT_NOT_FOUND",
       message="Contract not found",
       status_code=400,
     )
@@ -210,9 +239,11 @@ def update_contract_metadata(
   """
   Update editable contract metadata.
   """
+  ensure_database_connection()
 
   if not ObjectId.is_valid(contract_id):
     raise AppException(
+      error_code="INVALID_CONTRACT_ID",
       message="Invalid contract ID provided",
       status_code=400,
     )
@@ -225,6 +256,7 @@ def update_contract_metadata(
 
   if not update_fields:
     raise AppException(
+      error_code="VALIDATION_ERROR",
       message="At least one field is required for update",
       status_code=422,
     )
@@ -238,6 +270,7 @@ def update_contract_metadata(
 
   if result.matched_count == 0:
     raise AppException(
+      error_code="CONTRACT_NOT_FOUND",
       message="Contract not found",
       status_code=400,
     )

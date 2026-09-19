@@ -1,7 +1,6 @@
 from pathlib import Path
 from PyPDF2 import PdfReader
-from fastapi import HTTPException
-from app.exceptions.application import TextExtractionException
+from app.exceptions.application import AppException
 
 def extract_text_from_pdf(file_path: str) -> str:
   try:
@@ -18,18 +17,20 @@ def extract_text_from_pdf(file_path: str) -> str:
     text = "\n".join(extracted_text).strip() # It removes unnecessary whitespace from beginning/end.
 
     if not text:
-      raise HTTPException(
+      raise AppException(
+        error_code="TEXT_EXTRACTION_ERROR",
         status_code=400,
         detail="Could not extract text from PDF"
       )
 
     return text
 
-  except HTTPException:
-      raise
-
   except Exception as error:
-    raise TextExtractionException()
+    raise AppException(
+      error_code="TEXT_EXTRACTION_ERROR",
+      message="Unable to extract text from the document",
+      status_code=400,
+    )
 
 
 def extract_text_from_txt(file_path: str) -> str:
@@ -39,18 +40,20 @@ def extract_text_from_txt(file_path: str) -> str:
     ).strip()
 
     if not text:
-      raise HTTPException(
+      raise AppException(
+        error_code="TEXT_EXTRACTION_ERROR",
         status_code=400,
         detail="TXT file is empty"
       )
 
     return text
 
-  except HTTPException:
-    raise
-
   except Exception as error:
-    raise TextExtractionException()
+    raise AppException(
+      error_code="TEXT_EXTRACTION_ERROR",
+      message="Unable to extract text from the document",
+      status_code=400,
+    )
 
 
 def extract_text(file_path: str) -> str:
@@ -62,7 +65,8 @@ def extract_text(file_path: str) -> str:
   if extension == ".txt":
     return extract_text_from_txt(file_path)
 
-  raise HTTPException(
-    status_code=400,
-    detail="Unsupported file type"
+  raise AppException(
+    error_code="VALIDATION_ERROR",
+    message="Unsupported file type",
+    status_code=422,
   )

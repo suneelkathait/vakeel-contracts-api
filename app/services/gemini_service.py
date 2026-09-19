@@ -4,7 +4,8 @@ import logging
 
 from app.core.config import settings
 from app.schemas.analysis import ContractAnalysis
-from app.exceptions.application import AIAnalysisException
+from app.exceptions.application import AppException
+from google.genai import errors
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +64,7 @@ def analyze_contract(contract_text: str) -> ContractAnalysis:
       contents=prompt,
     )
 
-    logger.info(
-      "Gemini response received successfully",
-    )
+    logger.info("Gemini response received successfully")
 
     raw_text = response.text.strip()
 
@@ -81,9 +80,39 @@ def analyze_contract(contract_text: str) -> ContractAnalysis:
 
     return analysis
 
-  except Exception:
-    logger.exception(
-      "Gemini contract analysis failed",
+  except errors.APIError as e:
+    logger.error(
+      "Gemini API error. code=%s message=%s",
+      e.code,
+      e.message,
+    )
+    if e.code == 429:
+      raise AppException(
+        error_code="GEMINI_RATE_LIMIT",
+        message="Gemini API rate limit exceeded. Please try again later.",
+        status_code=429,
+      )
+
+    raise AppException(
+      error_code="GEMINI_API_ERROR",
+      message="Gemini API request failed.",
+      status_code=502,
     )
 
-    raise AIAnalysisException()
+  except json.JSONDecodeError:
+    raise AppException(
+      error_code="GEMINI_INVALID_JSON",
+      message="Gemini returned an invalid JSON response.",
+      status_code=422,
+    )
+
+  except Exception as e:
+    logger.exception(
+      "Unexpected error during contract analysis"
+    )
+
+    raise AppException(
+      error_code="VALIDATION_ERROR",
+      message="Gemini response does not match the expected schema.",
+      status_code=422,
+    )

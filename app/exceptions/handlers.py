@@ -12,6 +12,7 @@ async def app_exception_handler(
     content={
       "success": False,
       "error": {
+        "error_code": exc.error_code,
         "message": exc.message,
         "status_code": exc.status_code,
       },

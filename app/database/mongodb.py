@@ -1,7 +1,10 @@
 from pymongo import MongoClient
 from app.core.config import settings
 
-client = MongoClient(settings.MONGODB_URL)
+client = MongoClient(
+  settings.MONGODB_URL,
+  serverSelectionTimeoutMS=3000,
+)
 database = client[settings.DATABASE_NAME]
 contracts_collection = database["contracts"]
 
